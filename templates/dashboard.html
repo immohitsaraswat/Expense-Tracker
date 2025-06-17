@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker - Your Records</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 1000px;
+            width: 95%;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .input-field {
+            border: 1px solid #cbd5e0;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .btn-primary {
+            background-color: #6366f1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn-primary:hover {
+            background-color: #4f46e5;
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background-color: #ef4444; /* Red button */
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626; /* Darker red on hover */
+            transform: translateY(-1px);
+        }
+        .message-box {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .message-box.success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        /* Table styling */
+        .expense-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+        .expense-table th, .expense-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0; /* Light gray border */
+        }
+        .expense-table th {
+            background-color: #f8fafc; /* Lighter background for headers */
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        .expense-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .expense-table tbody tr:hover {
+            background-color: #f0f4f8; /* Subtle hover effect */
+        }
+
+        /* Styles to contain vertical overflow */
+        #expense-list-container {
+            max-height: 400px; /* Limits the height of the expense table container */
+            overflow-y: auto; /* Adds vertical scrollbar if content exceeds max-height */
+        }
+
+        #expense-analysis {
+            max-height: 200px; /* Limits the height of the analysis section */
+            overflow-y: auto; /* Adds vertical scrollbar if content exceeds max-height */
+        }
+
+        /* New style for the chart card to limit its height */
+        .chart-card-container {
+            max-height: 500px; /* Adjust this value as needed */
+            overflow-y: auto; /* Add scroll if chart content somehow overflows */
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+    <header class="bg-indigo-700 text-white p-4 shadow-md">
+        <div class="container flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Expense Tracker</h1>
+            <nav class="flex items-center space-x-4">
+                <span class="text-lg">Hello, <span class="font-semibold">{{ username }}</span>!</span>
+                <a href="/logout" class="btn-danger py-2 px-4 rounded-lg">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow container mt-8">
+        <div id="message-box" class="message-box hidden"></div>
+
+        <div class="card mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Expense</h2>
+            <form id="add-expense-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Amount:</label>
+                    <input type="number" id="amount" name="amount" step="0.01" required class="input-field">
+                </div>
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Category:</label>
+                    <select id="category" name="category" required class="input-field">
+                        <option value="">Select Category</option>
+                        <option value="Food">Food</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Rent">Rent</option>
+                        <option value="Salary">Salary</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Date:</label>
+                    <input type="date" id="date" name="date" required class="input-field">
+                </div>
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description:</label>
+                    <input type="text" id="description" name="description" required class="input-field">
+                </div>
+                <div class="md:col-span-2">
+                    <button type="submit" class="btn-primary w-full">Add Expense</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div class="card">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Total Expenses</h2>
+                <p id="total-expenses-display" class="text-4xl font-extrabold text-indigo-600">₹0.00</p>
+            </div>
+            <div class="card flex flex-col items-center justify-center chart-card-container"> <h2 class="text-2xl font-bold text-gray-800 mb-4">Expenses by Category</h2>
+                <canvas id="expense-chart" class="w-full h-64"></canvas>
+                <p id="chart-message" class="text-gray-500 mt-2 hidden">Add expenses to see your chart!</p>
+            </div>
+        </div>
+
+        <div class="card mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Expense Analysis</h2>
+            <div id="expense-analysis" class="text-gray-700 space-y-2">
+                <p id="analysis-message">Add expenses to see analysis.</p>
+                </div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Your Expense Records</h2>
+            <div id="expense-list-container" class="overflow-x-auto">
+                <table class="expense-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-table-body">
+                        <tr>
+                            <td colspan="5" class="text-center text-gray-500 py-4">No expenses added yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
